@@ -64,15 +64,7 @@ const RULE_CONFIG: Record<keyof GameRules, { label: string; icon: React.ReactNod
 };
 
 const GameInfo: React.FC<GameInfoProps> = ({ rules, logs, isDark, onToggleRule }) => {
-  const logsEndRef = useRef<HTMLDivElement>(null);
   const [infoRule, setInfoRule] = useState<keyof GameRules | null>(null);
-
-  // Auto-scroll to bottom of logs
-  useEffect(() => {
-    if (logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [logs]);
 
   return (
     <motion.section 
@@ -257,9 +249,9 @@ const GameInfo: React.FC<GameInfoProps> = ({ rules, logs, isDark, onToggleRule }
             ) : (
               logs.map((log, i) => (
                 <motion.div
-                  key={`${i}-${log.message.substring(0, 5)}`}
-                  initial={{ opacity: 0, x: -10, height: 0 }}
-                  animate={{ opacity: 1, x: 0, height: 'auto' }}
+                  key={`${logs.length - i}-${log.message}`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   className={`
                     relative pl-3 py-2 text-[10px] font-mono leading-relaxed border-l-2 backdrop-blur-sm rounded-r-sm
                     ${log.type === 'combo' 
@@ -275,7 +267,6 @@ const GameInfo: React.FC<GameInfoProps> = ({ rules, logs, isDark, onToggleRule }
                 </motion.div>
               ))
             )}
-            <div ref={logsEndRef} />
           </AnimatePresence>
         </div>
       </div>

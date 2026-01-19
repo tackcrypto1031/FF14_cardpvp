@@ -183,7 +183,13 @@ const App: React.FC = () => {
     newBoard[slotIdx] = card;
     const result = resolvePlacement(newBoard, slotIdx, rules);
     setBoard(result.newBoard);
-    setLogs(prev => [...result.logs, ...prev]);
+    
+    const placementLog: LogEntry = {
+      message: `${card.owner === 'blue' ? '玩家' : '敵方'}放置了「${card.name}」於 ${slotIdx + 1} 號位`,
+      type: 'info'
+    };
+    
+    setLogs(prev => [placementLog, ...result.logs, ...prev]);
     return result.newBoard;
   };
 
