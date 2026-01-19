@@ -29,11 +29,11 @@ const GameControls: React.FC<GameControlsProps> = ({
             ? 'from-amber-200 via-amber-500 to-amber-700' 
             : 'from-slate-700 via-slate-900 to-slate-700'
         }`}>
-          九宮幻卡
+          塔克小工具
           <span className={`block md:inline md:ml-3 text-xs md:text-sm font-normal tracking-wide opacity-60 font-sans italic ${
             isDark ? 'text-amber-400' : 'text-slate-500'
           }`}>
-            模擬器
+            九宮幻卡模擬器
           </span>
         </h1>
       </div>

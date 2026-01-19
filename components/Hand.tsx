@@ -23,6 +23,9 @@ interface HandProps {
   onLoadDeck: (newHand: CardData[]) => void;
 }
 
+const STORAGE_KEY_DECK = 'ff14-cardpvp-deck';
+const STORAGE_KEY_DEFAULT_DECK = 'ff14-cardpvp-default-deck';
+
 const Hand: React.FC<HandProps> = ({
   hand,
   editMode,
@@ -40,13 +43,12 @@ const Hand: React.FC<HandProps> = ({
   onLoadDeck,
 }) => {
   const handleSaveDeck = () => {
-    localStorage.setItem('ff14-cardpvp-deck', JSON.stringify(hand));
-    // Optional: Show a toast or feedback
-    alert('牌組已儲存！');
+    localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(hand));
+    alert('當前牌組已儲存！');
   };
 
   const handleLoadDeck = () => {
-    const saved = localStorage.getItem('ff14-cardpvp-deck');
+    const saved = localStorage.getItem(STORAGE_KEY_DECK);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -56,6 +58,25 @@ const Hand: React.FC<HandProps> = ({
       }
     } else {
       alert('找不到儲存的牌組！');
+    }
+  };
+
+  const handleSetDefaultDeck = () => {
+    localStorage.setItem(STORAGE_KEY_DEFAULT_DECK, JSON.stringify(hand));
+    alert('已設為預設牌組！下次初始化將自動讀取。');
+  };
+
+  const handleLoadDefaultDeck = () => {
+    const saved = localStorage.getItem(STORAGE_KEY_DEFAULT_DECK);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        onLoadDeck(parsed);
+      } catch (e) {
+        console.error('Failed to load default deck', e);
+      }
+    } else {
+      alert('尚未設定預設牌組！');
     }
   };
 
@@ -122,28 +143,52 @@ const Hand: React.FC<HandProps> = ({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="flex gap-2"
+            className="flex flex-col gap-2"
           >
-            <button
-              onClick={handleSaveDeck}
-              className={clsx(
-                "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors",
-                isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
-              )}
-            >
-              <Save size={12} />
-              儲存牌組
-            </button>
-            <button
-              onClick={handleLoadDeck}
-              className={clsx(
-                "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors",
-                isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
-              )}
-            >
-              <FolderOpen size={12} />
-              讀取牌組
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveDeck}
+                className={clsx(
+                  "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors",
+                  isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
+                )}
+              >
+                <Save size={12} />
+                儲存
+              </button>
+              <button
+                onClick={handleLoadDeck}
+                className={clsx(
+                  "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors",
+                  isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
+                )}
+              >
+                <FolderOpen size={12} />
+                讀取
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSetDefaultDeck}
+                className={clsx(
+                  "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors border-dashed",
+                  isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
+                )}
+                title="將當前牌組設為預設"
+              >
+                設為預設
+              </button>
+              <button
+                onClick={handleLoadDefaultDeck}
+                className={clsx(
+                  "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors border-dashed",
+                  isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
+                )}
+                title="讀取預設牌組"
+              >
+                讀取預設
+              </button>
+            </div>
           </motion.div>
         )}
       </div>

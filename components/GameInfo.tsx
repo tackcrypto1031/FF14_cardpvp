@@ -10,14 +10,14 @@ interface GameInfoProps {
   onToggleRule: (rule: keyof GameRules) => void;
 }
 
-const RULE_CONFIG: Record<keyof GameRules, { label: string; icon: React.ReactNode; color: string }> = {
-  reverse: { label: "逆轉", icon: <Zap size={14} />, color: "text-red-400" },
-  fallenAce: { label: "王牌殺手", icon: <ShieldAlert size={14} />, color: "text-orange-400" },
-  same: { label: "同數", icon: <Layers size={14} />, color: "text-cyan-400" },
-  plus: { label: "加算", icon: <Activity size={14} />, color: "text-green-400" },
-  ascension: { label: "同類強化", icon: <ArrowUpCircle size={14} />, color: "text-purple-400" },
-  descension: { label: "同類弱化", icon: <ArrowDownCircle size={14} />, color: "text-pink-400" },
-  order: { label: "秩序", icon: <ListOrdered size={14} />, color: "text-blue-400" },
+const RULE_CONFIG: Record<keyof GameRules, { label: string; icon: React.ReactNode; color: string; activeColor: string }> = {
+  reverse: { label: "逆轉", icon: <Zap size={14} />, color: "text-red-400", activeColor: "bg-red-500/20 border-red-500/50 text-red-100" },
+  fallenAce: { label: "王牌殺手", icon: <ShieldAlert size={14} />, color: "text-orange-400", activeColor: "bg-orange-500/20 border-orange-500/50 text-orange-100" },
+  same: { label: "同數", icon: <Layers size={14} />, color: "text-cyan-400", activeColor: "bg-cyan-500/20 border-cyan-500/50 text-cyan-100" },
+  plus: { label: "加算", icon: <Activity size={14} />, color: "text-green-400", activeColor: "bg-green-500/20 border-green-500/50 text-green-100" },
+  ascension: { label: "同類強化", icon: <ArrowUpCircle size={14} />, color: "text-purple-400", activeColor: "bg-purple-500/20 border-purple-500/50 text-purple-100" },
+  descension: { label: "同類弱化", icon: <ArrowDownCircle size={14} />, color: "text-pink-400", activeColor: "bg-pink-500/20 border-pink-500/50 text-pink-100" },
+  order: { label: "秩序", icon: <ListOrdered size={14} />, color: "text-blue-400", activeColor: "bg-blue-500/20 border-blue-500/50 text-blue-100" },
 };
 
 const GameInfo: React.FC<GameInfoProps> = ({ rules, logs, isDark, onToggleRule }) => {
@@ -60,33 +60,31 @@ const GameInfo: React.FC<GameInfoProps> = ({ rules, logs, isDark, onToggleRule }
               <motion.button
                 key={key}
                 onClick={() => onToggleRule(ruleKey)}
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.02, backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)" }}
                 whileTap={{ scale: 0.98 }}
                 className={`
-                  relative overflow-hidden group px-3 py-2 rounded-sm border text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-all duration-300
+                  relative overflow-hidden group px-3 py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-all duration-300
                   ${isActive 
                     ? (isDark 
-                        ? 'border-amber-500/50 bg-amber-500/10 text-amber-100 shadow-[0_0_10px_rgba(245,158,11,0.2)]' 
-                        : 'border-blue-500/50 bg-blue-500/10 text-blue-700 shadow-[0_0_10px_rgba(59,130,246,0.1)]')
+                        ? `${config.activeColor} shadow-[0_0_15px_-3px_rgba(0,0,0,0.5)]` 
+                        : "bg-blue-500 border-blue-600 text-white shadow-md")
                     : (isDark 
-                        ? 'border-white/5 bg-white/5 text-white/30 hover:bg-white/10 hover:border-white/10' 
-                        : 'border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600')
+                        ? 'border-white/5 bg-white/5 text-white/30 hover:text-white/60' 
+                        : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-slate-300 hover:text-slate-600')
                   }
                 `}
               >
-                {/* Active Indicator Line */}
+                {/* Active Indicator Pulse */}
                 {isActive && (
                   <motion.div 
-                    layoutId="activeGlow"
-                    className={`absolute inset-0 opacity-20 ${isDark ? 'bg-amber-400' : 'bg-blue-400'}`}
-                    initial={{ x: '-100%' }}
-                    animate={{ x: '100%' }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                    className={`absolute inset-0 opacity-10 ${isDark ? 'bg-white' : 'bg-blue-400'}`}
+                    animate={{ opacity: [0.05, 0.15, 0.05] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
                   />
                 )}
                 
-                <span className={`z-10 ${isActive ? config.color : ''}`}>{config.icon}</span>
-                <span className="z-10 relative">{config.label}</span>
+                <span className={`z-10 transition-colors duration-300 ${isActive ? (isDark ? config.color : 'text-white') : ''}`}>{config.icon}</span>
+                <span className="z-10 relative truncate">{config.label}</span>
               </motion.button>
             );
           })}

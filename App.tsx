@@ -141,7 +141,16 @@ const App: React.FC = () => {
 
   const resetAll = () => {
     resetBoard();
-    setHand(INITIAL_HAND);
+    const savedDefault = localStorage.getItem('ff14-cardpvp-default-deck');
+    if (savedDefault) {
+      try {
+        setHand(JSON.parse(savedDefault));
+      } catch (e) {
+        setHand(INITIAL_HAND);
+      }
+    } else {
+      setHand(INITIAL_HAND);
+    }
     setRules(INITIAL_RULES);
     setEditMode(false);
   };
