@@ -1,8 +1,5 @@
 # FF14 九宮幻卡模擬器 (Triple Triad Simulator & Solver)
 
-<div align="center">
-  <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
 
 這是一個專為《最終幻想14》（FF14）設計的高精度九宮幻卡（Triple Triad）模擬器與解法器。它不僅能幫助玩家模擬各種複雜的遊戲規則，還能提供最優解建議，助你輕鬆戰勝 NPC 或優化牌組戰術。
 
