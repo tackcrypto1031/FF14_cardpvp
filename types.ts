@@ -1,7 +1,7 @@
 
 export enum CardType {
   NONE = "無",
-  PRIMAL = "蠻神",
+  PRIMAL = "蠻族",
   SCION = "血盟",
   BEASTMAN = "獸人",
   GARLEAN = "帝國",
@@ -36,7 +36,16 @@ export interface GameRules {
   order: boolean;
 }
 
+export type ThemeMode = 'light' | 'dark';
+
 export interface LogEntry {
   message: string;
   type: 'info' | 'combo' | 'flip';
+}
+
+export interface MoveSuggestion {
+  cardIdx: number;
+  slotIdx: number;
+  score: number;
+  flippedCount: number;
 }

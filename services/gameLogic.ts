@@ -1,4 +1,4 @@
-import { BoardSlot, CardData, CardType, GameRules, LogEntry } from '../types';
+import { BoardSlot, CardData, CardType, GameRules, LogEntry, MoveSuggestion } from '../types';
 
 // Grid Adjacency Mapping (Index 0-8)
 // 0 1 2
@@ -42,25 +42,27 @@ const getEffectiveStat = (
     if (rules.descension) val -= count;
   }
 
+  // Value clamped between 1 and 10 (A)
   return Math.max(1, Math.min(10, val));
 };
 
 // Determine if Attacker flips Defender based on Basic/Reverse/FallenAce
 const checksFlip = (attackVal: number, defendVal: number, rules: GameRules): boolean => {
-  let wins = false;
-  
-  // Fallen Ace: 1 beats A (10). Reverse Fallen Ace: A (10) beats 1.
+  // Fallen Ace (Ace Killer): 1 beats A (10). 
   if (rules.fallenAce) {
      if (!rules.reverse && attackVal === 1 && defendVal === 10) return true;
+     // If Reverse is also active: A (10) beats 1.
      if (rules.reverse && attackVal === 10 && defendVal === 1) return true;
   }
 
   if (rules.reverse) {
-    wins = attackVal < defendVal;
+    // In Reverse, A (10) is the weakest, 1 is the strongest.
+    // However, if Fallen Ace is also active, A beats 1 (handled above).
+    // For other cases:
+    return attackVal < defendVal;
   } else {
-    wins = attackVal > defendVal;
+    return attackVal > defendVal;
   }
-  return wins;
 };
 
 // Main resolution function
@@ -75,14 +77,12 @@ export const resolvePlacement = (
 
   if (!placedCard) return { newBoard, logs };
 
-  // Calculate buffs for the current board state (placed card is already in newBoard)
+  // 1. Recalculate type counts after placement
   const typeCounts = getBoardTypeCounts(newBoard);
 
   // Queue for Combo chain. Stores index of card that just flipped others.
   const comboQueue: number[] = []; 
   
-  // 1. Check Special Rules (Same / Plus) immediate trigger
-  // These rules only apply to the card JUST placed.
   const adjIds = ADJACENCY[placedCardIndex];
   
   // Helper to construct neighbor info with effective stats
@@ -117,10 +117,15 @@ export const resolvePlacement = (
       }
     });
 
+    // SAME triggers if 2 or more sides match
     if (matches.length >= 2) {
-      logs.push({ message: `觸發「同數 (Same)」規則！`, type: 'info' });
+      let triggered = false;
       matches.forEach(idx => {
         if (newBoard[idx]!.owner !== placedCard.owner) {
+          if (!triggered) {
+            logs.push({ message: `觸發「同數 (Same)」規則！`, type: 'info' });
+            triggered = true;
+          }
           newBoard[idx] = { ...newBoard[idx]!, owner: placedCard.owner };
           logs.push({ message: `卡牌因「同數」翻面`, type: 'flip' });
           flippedBySpecial.add(idx);
@@ -141,10 +146,14 @@ export const resolvePlacement = (
 
     sums.forEach((indices, sumVal) => {
       if (indices.length >= 2) {
-        logs.push({ message: `觸發「加算 (Plus)」規則 (總和 ${sumVal})！`, type: 'info' });
+        let triggered = false;
         indices.forEach(idx => {
-          if (!flippedBySpecial.has(idx)) {
-            if (newBoard[idx]!.owner !== placedCard.owner) {
+          if (newBoard[idx]!.owner !== placedCard.owner) {
+            if (!triggered) {
+              logs.push({ message: `觸發「加算 (Plus)」規則 (總和 ${sumVal})！`, type: 'info' });
+              triggered = true;
+            }
+            if (!flippedBySpecial.has(idx)) {
               newBoard[idx] = { ...newBoard[idx]!, owner: placedCard.owner };
               logs.push({ message: `卡牌因「加算」翻面`, type: 'flip' });
               flippedBySpecial.add(idx);
@@ -165,6 +174,9 @@ export const resolvePlacement = (
     if (checksFlip(n.atkStat, n.defStat, rules)) {
       newBoard[n.idx] = { ...newBoard[n.idx]!, owner: placedCard.owner };
       logs.push({ message: `卡牌因數值比拼被佔領`, type: 'flip' });
+      // Note: In FF14, basic flips do NOT trigger Combo unless it's a chain from Same/Plus.
+      // Wait, actually, the rule says "符合條件的對方卡牌被己方佔有後... 則可達成連擊條件「連攜」".
+      // Usually "Combo" follows Same/Plus. Basic flips do NOT start a Combo chain.
     }
   });
 
@@ -178,7 +190,6 @@ export const resolvePlacement = (
     const currentCard = newBoard[currentIdx]!;
     const cAdj = ADJACENCY[currentIdx];
     
-    // Recalculate neighbors for combo propagation (using current board state counts)
     const getComboNeighbor = (idx: number | null, atkSide: 'top'|'bottom'|'left'|'right', defSide: 'top'|'bottom'|'left'|'right') => {
         if (idx === null) return null;
         const target = newBoard[idx];
@@ -214,13 +225,6 @@ export const resolvePlacement = (
 
 // --- SOLVER / AI SUGGESTION ---
 
-export interface MoveSuggestion {
-  cardIdx: number;
-  slotIdx: number;
-  score: number;
-  flippedCount: number;
-}
-
 export const getBestMove = (
   currentBoard: BoardSlot[],
   hand: CardData[],
@@ -245,13 +249,11 @@ export const getBestMove = (
   let validCardsIndices: number[] = [];
   
   if (rules.order) {
-    // If Order rule is active, find the FIRST unused card. That is the ONLY valid move.
     const firstUnusedIdx = hand.findIndex(c => !usedCardIds.has(c.id));
     if (firstUnusedIdx !== -1) {
       validCardsIndices = [firstUnusedIdx];
     }
   } else {
-    // Otherwise, all unused cards are valid
     validCardsIndices = hand.map((_, i) => i).filter(i => !usedCardIds.has(hand[i].id));
   }
 
@@ -259,14 +261,12 @@ export const getBestMove = (
     const card = hand[cIdx];
     
     for (const slotIdx of availableSlots) {
-      // 1. Simulate placement
       let simBoard = [...currentBoard];
-      simBoard[slotIdx] = card; // Place card
+      simBoard[slotIdx] = { ...card, owner: 'blue' }; // Ensure blue owner for simulation
 
       const result = resolvePlacement(simBoard, slotIdx, rules);
       const finalBoard = result.newBoard;
 
-      // 2. Score the board
       let blueCount = 0;
       finalBoard.forEach(c => {
         if (c && c.owner === 'blue') blueCount++;

@@ -1,0 +1,2 @@
+# FF14 Card Simulator Dependencies
+# (Currently uses built-in modules only)

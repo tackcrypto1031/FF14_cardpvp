@@ -6,34 +6,15 @@
     <title>FF14 九宮幻卡模擬器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* Custom scrollbar for a cleaner look */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #1a1a1a; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #4b5563; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #6b7280; 
-      }
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: #0d0d1a; }
+      ::-webkit-scrollbar-thumb { background: #451a03; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #78350f; }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
-  }
-}
-</script>
-</head>
-  <body class="bg-gray-900 text-gray-100">
+  </head>
+  <body class="bg-[#0d0d1a] text-amber-50">
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
