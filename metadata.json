@@ -1,0 +1,5 @@
+{
+  "name": "FF14 幻卡模擬器",
+  "description": "最終幻想14九宮幻卡模擬器，支援同數、加算及連攜規則計算。",
+  "requestFramePermissions": []
+}
