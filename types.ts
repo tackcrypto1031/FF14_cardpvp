@@ -2,7 +2,7 @@
 export enum CardType {
   NONE = "無",
   PRIMAL = "蠻神",
-  SCION = "拂曉",
+  SCION = "血盟",
   BEASTMAN = "獸人",
   GARLEAN = "帝國",
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, RotateCcw, AlertCircle, Play, X, Sword, Shield, Lightbulb, Calculator } from 'lucide-react';
+import { Settings, RotateCcw, AlertCircle, Play, X, Sword, Shield, Lightbulb, Calculator, Users } from 'lucide-react';
 import Card from './components/Card';
 import { CardData, CardType, GameRules, BoardSlot, LogEntry } from './types';
 import { INITIAL_HAND, INITIAL_RULES, parseStat, displayStat } from './constants';
@@ -24,6 +24,7 @@ const App: React.FC = () => {
   const [showEnemyModal, setShowEnemyModal] = useState(false);
   const [targetSlot, setTargetSlot] = useState<number | null>(null);
   const [enemyStats, setEnemyStats] = useState({ top: '', right: '', bottom: '', left: '' });
+  const [enemyType, setEnemyType] = useState<CardType>(CardType.NONE);
 
   // Mapping for Rules Display
   const RULE_NAMES: Record<keyof GameRules, string> = {
@@ -56,6 +57,13 @@ const App: React.FC = () => {
     const val = parseStat(value);
     const newHand = [...hand];
     newHand[cardIdx].stats[stat] = val as any;
+    setHand(newHand);
+    setSuggestion(null);
+  };
+
+  const handleTypeChange = (cardIdx: number, type: CardType) => {
+    const newHand = [...hand];
+    newHand[cardIdx].type = type;
     setHand(newHand);
     setSuggestion(null);
   };
@@ -146,6 +154,7 @@ const App: React.FC = () => {
     else {
       setTargetSlot(slotIdx);
       setEnemyStats({ top: '', right: '', bottom: '', left: '' });
+      setEnemyType(CardType.NONE);
       setShowEnemyModal(true);
     }
   };
@@ -169,7 +178,7 @@ const App: React.FC = () => {
     const newEnemyCard: CardData = {
       id: `enemy-${Date.now()}`,
       name: 'Enemy',
-      type: CardType.NONE,
+      type: enemyType,
       owner: 'red',
       stats: {
         top: parseStat(enemyStats.top) as any,
@@ -221,9 +230,9 @@ const App: React.FC = () => {
             <h3 className="text-xl font-bold text-red-400 mb-2 flex items-center gap-2">
               <Sword size={24} /> 登錄敵方卡牌
             </h3>
-            <p className="text-sm text-gray-400 mb-6">請輸入敵方放置在該位置的數值</p>
+            <p className="text-sm text-gray-400 mb-4">輸入敵方卡牌數值與種族</p>
 
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-6">
               <div className="grid grid-cols-3 gap-2 w-48">
                 {/* Top */}
                 <div className="col-start-2">
@@ -265,6 +274,25 @@ const App: React.FC = () => {
                     className="w-full h-12 bg-gray-900 border-2 border-red-500/50 rounded text-center text-xl font-bold focus:border-red-400 outline-none"
                     placeholder="下"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Enemy Type Selector */}
+            <div className="mb-6">
+              <label className="block text-gray-400 text-xs font-bold mb-2">種族 (類型)</label>
+              <div className="relative">
+                <select 
+                  value={enemyType}
+                  onChange={(e) => setEnemyType(e.target.value as CardType)}
+                  className="w-full bg-gray-900 border border-gray-600 text-gray-200 rounded p-2 text-sm appearance-none focus:border-red-500 outline-none"
+                >
+                  {Object.values(CardType).map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                  <Users size={16} />
                 </div>
               </div>
             </div>
@@ -334,7 +362,7 @@ const App: React.FC = () => {
                 
                 return (
                   <div key={card.id} className={`
-                    relative flex items-center gap-4 p-3 rounded-lg border transition-all duration-300
+                    relative flex flex-col gap-2 p-3 rounded-lg border transition-all duration-300
                     ${isUsed 
                       ? 'bg-gray-900/20 border-gray-800 opacity-50 grayscale pointer-events-none' 
                       : !selectable && !editMode
@@ -346,101 +374,121 @@ const App: React.FC = () => {
                             : 'bg-gray-900/50 border-gray-700 hover:bg-gray-800'
                     }
                   `}>
-                    {isSuggested && !isUsed && selectable && (
-                       <div className="absolute -left-3 top-1/2 -translate-y-1/2 bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow rotate-[-90deg]">
-                         推薦
-                       </div>
-                    )}
-                    
-                    {isUsed && (
-                       <div className="absolute right-2 top-2 bg-gray-800 text-gray-500 text-[10px] font-bold px-2 py-1 rounded border border-gray-600">
-                         已使用
-                       </div>
-                    )}
-                    
-                    {!isUsed && !selectable && !editMode && (
-                        <div className="absolute right-2 top-2 bg-gray-800 text-gray-500 text-[10px] font-bold px-2 py-1 rounded border border-gray-600">
-                          {rules.order ? '順序鎖定' : '不可用'}
+                    <div className="flex items-center gap-4">
+                        {isSuggested && !isUsed && selectable && (
+                        <div className="absolute -left-3 top-1/2 -translate-y-1/2 bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow rotate-[-90deg]">
+                            推薦
                         </div>
-                    )}
+                        )}
+                        
+                        {isUsed && (
+                        <div className="absolute right-2 top-2 bg-gray-800 text-gray-500 text-[10px] font-bold px-2 py-1 rounded border border-gray-600">
+                            已使用
+                        </div>
+                        )}
+                        
+                        {!isUsed && !selectable && !editMode && (
+                            <div className="absolute right-2 top-2 bg-gray-800 text-gray-500 text-[10px] font-bold px-2 py-1 rounded border border-gray-600">
+                            {rules.order ? '順序鎖定' : '不可用'}
+                            </div>
+                        )}
 
-                    {/* Card Preview / Selector */}
-                    <div 
-                      className={`${!selectable ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
-                      onClick={() => selectable && !editMode && setSelectedCardIdx(idx === selectedCardIdx ? null : idx)}
-                    >
-                      <Card 
-                        card={card} 
-                        size="sm" 
-                        isSelected={selectedCardIdx === idx}
-                        className="shrink-0"
-                        draggable={selectable && !editMode}
-                        onDragStart={(e) => handleDragStart(e, idx)}
-                      />
+                        {/* Card Preview / Selector */}
+                        <div 
+                        className={`${!selectable ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
+                        onClick={() => selectable && !editMode && setSelectedCardIdx(idx === selectedCardIdx ? null : idx)}
+                        >
+                        <Card 
+                            card={card} 
+                            size="sm" 
+                            isSelected={selectedCardIdx === idx}
+                            className="shrink-0"
+                            draggable={selectable && !editMode}
+                            onDragStart={(e) => handleDragStart(e, idx)}
+                        />
+                        </div>
+
+                        {/* Inputs (Only visible in Edit Mode) */}
+                        {editMode ? (
+                        <div className="flex-1 grid grid-cols-3 gap-1 text-center">
+                            <div className="col-start-2">
+                            <input 
+                                disabled={isUsed}
+                                type="text" maxLength={2} 
+                                value={displayStat(card.stats.top)}
+                                onChange={(e) => handleStatChange(idx, 'top', e.target.value)}
+                                className="w-full bg-gray-700 border border-gray-600 rounded text-center text-sm focus:border-yellow-500 outline-none p-1 disabled:opacity-50"
+                                placeholder="上"
+                            />
+                            </div>
+                            <div className="col-start-1 row-start-2">
+                            <input 
+                                disabled={isUsed}
+                                type="text" maxLength={2} 
+                                value={displayStat(card.stats.left)}
+                                onChange={(e) => handleStatChange(idx, 'left', e.target.value)}
+                                className="w-full bg-gray-700 border border-gray-600 rounded text-center text-sm focus:border-yellow-500 outline-none p-1 disabled:opacity-50"
+                                placeholder="左"
+                            />
+                            </div>
+                            <div className="col-start-3 row-start-2">
+                            <input 
+                                disabled={isUsed}
+                                type="text" maxLength={2} 
+                                value={displayStat(card.stats.right)}
+                                onChange={(e) => handleStatChange(idx, 'right', e.target.value)}
+                                className="w-full bg-gray-700 border border-gray-600 rounded text-center text-sm focus:border-yellow-500 outline-none p-1 disabled:opacity-50"
+                                placeholder="右"
+                            />
+                            </div>
+                            <div className="col-start-2 row-start-3">
+                            <input 
+                                disabled={isUsed}
+                                type="text" maxLength={2} 
+                                value={displayStat(card.stats.bottom)}
+                                onChange={(e) => handleStatChange(idx, 'bottom', e.target.value)}
+                                className="w-full bg-gray-700 border border-gray-600 rounded text-center text-sm focus:border-yellow-500 outline-none p-1 disabled:opacity-50"
+                                placeholder="下"
+                            />
+                            </div>
+                        </div>
+                        ) : (
+                        <div 
+                            className={`flex-1 h-full flex flex-col justify-center pl-2 ${!selectable ? 'cursor-default' : 'cursor-pointer'}`}
+                            onClick={() => selectable && setSelectedCardIdx(idx === selectedCardIdx ? null : idx)}
+                        >
+                            <div className={`font-bold mb-1 ${isUsed ? 'text-gray-500' : isSuggested && selectable ? 'text-green-400' : selectedCardIdx === idx ? 'text-blue-300' : 'text-gray-400'}`}>
+                            {isUsed ? '已放置' : isSuggested && selectable ? '建議使用此卡' : selectedCardIdx === idx ? '已選擇' : `卡牌 ${card.name}`}
+                            </div>
+                            <div className="text-xs text-gray-600 mb-1">
+                            {isUsed 
+                                ? '無法再次使用' 
+                                : !selectable 
+                                ? (rules.order ? '需按順序出牌' : '不可選取') 
+                                : selectedCardIdx === idx 
+                                    ? '拖曳至盤面或點擊放置' 
+                                    : '點擊選取或直接拖曳'}
+                            </div>
+                            <div className="text-[10px] text-gray-500 border border-gray-700 rounded px-2 py-0.5 inline-block w-fit">
+                                {card.type}
+                            </div>
+                        </div>
+                        )}
                     </div>
 
-                    {/* Inputs (Only visible in Edit Mode) */}
-                    {editMode ? (
-                      <div className="flex-1 grid grid-cols-3 gap-1 text-center">
-                        <div className="col-start-2">
-                          <input 
-                            disabled={isUsed}
-                            type="text" maxLength={2} 
-                            value={displayStat(card.stats.top)}
-                            onChange={(e) => handleStatChange(idx, 'top', e.target.value)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded text-center text-sm focus:border-yellow-500 outline-none p-1 disabled:opacity-50"
-                            placeholder="上"
-                          />
+                    {/* Type Selector (Only in Edit Mode) */}
+                    {editMode && !isUsed && (
+                        <div className="mt-1">
+                            <select 
+                                value={card.type}
+                                onChange={(e) => handleTypeChange(idx, e.target.value as CardType)}
+                                className="w-full bg-gray-800 border border-gray-600 text-gray-300 text-xs rounded p-1 outline-none focus:border-blue-500"
+                            >
+                                {Object.values(CardType).map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
                         </div>
-                        <div className="col-start-1 row-start-2">
-                          <input 
-                            disabled={isUsed}
-                            type="text" maxLength={2} 
-                            value={displayStat(card.stats.left)}
-                            onChange={(e) => handleStatChange(idx, 'left', e.target.value)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded text-center text-sm focus:border-yellow-500 outline-none p-1 disabled:opacity-50"
-                            placeholder="左"
-                          />
-                        </div>
-                        <div className="col-start-3 row-start-2">
-                          <input 
-                            disabled={isUsed}
-                            type="text" maxLength={2} 
-                            value={displayStat(card.stats.right)}
-                            onChange={(e) => handleStatChange(idx, 'right', e.target.value)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded text-center text-sm focus:border-yellow-500 outline-none p-1 disabled:opacity-50"
-                            placeholder="右"
-                          />
-                        </div>
-                        <div className="col-start-2 row-start-3">
-                          <input 
-                            disabled={isUsed}
-                            type="text" maxLength={2} 
-                            value={displayStat(card.stats.bottom)}
-                            onChange={(e) => handleStatChange(idx, 'bottom', e.target.value)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded text-center text-sm focus:border-yellow-500 outline-none p-1 disabled:opacity-50"
-                            placeholder="下"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div 
-                        className={`flex-1 h-full flex flex-col justify-center pl-2 ${!selectable ? 'cursor-default' : 'cursor-pointer'}`}
-                        onClick={() => selectable && setSelectedCardIdx(idx === selectedCardIdx ? null : idx)}
-                      >
-                        <div className={`font-bold mb-1 ${isUsed ? 'text-gray-500' : isSuggested && selectable ? 'text-green-400' : selectedCardIdx === idx ? 'text-blue-300' : 'text-gray-400'}`}>
-                          {isUsed ? '已放置' : isSuggested && selectable ? '建議使用此卡' : selectedCardIdx === idx ? '已選擇' : `卡牌 ${card.name}`}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {isUsed 
-                            ? '無法再次使用' 
-                            : !selectable 
-                              ? (rules.order ? '需按順序出牌' : '不可選取') 
-                              : selectedCardIdx === idx 
-                                ? '拖曳至盤面或點擊放置' 
-                                : '點擊選取或直接拖曳'}
-                        </div>
-                      </div>
                     )}
                   </div>
                 );

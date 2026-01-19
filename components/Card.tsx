@@ -1,5 +1,5 @@
 import React from 'react';
-import { CardData } from '../types';
+import { CardData, CardType } from '../types';
 import { displayStat } from '../constants';
 
 interface CardProps {
@@ -32,13 +32,24 @@ const Card: React.FC<CardProps> = ({
 
   const statBaseClass = "absolute font-bold drop-shadow-md select-none";
 
+  // Type Icon/Badge Color mapping
+  const getTypeColor = (type: CardType) => {
+    switch (type) {
+      case CardType.PRIMAL: return 'text-red-400 border-red-400/50 bg-red-900/50';
+      case CardType.SCION: return 'text-blue-300 border-blue-400/50 bg-blue-900/50';
+      case CardType.GARLEAN: return 'text-gray-400 border-gray-400/50 bg-gray-700/50';
+      case CardType.BEASTMAN: return 'text-yellow-600 border-yellow-600/50 bg-yellow-900/50';
+      default: return 'text-transparent';
+    }
+  };
+
   return (
     <div
       onClick={onClick}
       draggable={draggable}
       onDragStart={onDragStart}
       className={`
-        relative rounded-lg shadow-lg border-2 transition-all duration-200
+        relative rounded-lg shadow-lg border-2 transition-all duration-200 overflow-hidden
         ${sizeClasses[size]}
         ${isBlue ? 'bg-blue-900 border-blue-400 text-blue-100' : 'bg-red-900 border-red-400 text-red-100'}
         ${isSelected ? 'ring-4 ring-yellow-400 -translate-y-2' : 'hover:scale-105'}
@@ -50,15 +61,15 @@ const Card: React.FC<CardProps> = ({
       {/* Background decoration */}
       <div className={`absolute inset-1 border ${isBlue ? 'border-blue-700' : 'border-red-700'} opacity-50 rounded`}></div>
       
-      {/* Central Type Icon (Optional Placeholder) */}
-      {card.type !== 'None' && (
-        <div className="absolute opacity-20 text-[0.6rem] uppercase tracking-wider font-bold">
+      {/* Card Type Badge (Top Right) */}
+      {card.type !== CardType.NONE && (
+        <div className={`absolute top-1 right-1 px-1 rounded border text-[0.5rem] font-bold uppercase tracking-tighter z-10 ${getTypeColor(card.type)}`}>
           {card.type}
         </div>
       )}
 
       {/* Stats Diamond Layout */}
-      <div className="relative w-full h-full pointer-events-none">
+      <div className="relative w-full h-full pointer-events-none z-10">
         {/* Top */}
         <span className={`${statBaseClass} top-1 left-1/2 -translate-x-1/2`}>
           {displayStat(card.stats.top)}
@@ -81,7 +92,7 @@ const Card: React.FC<CardProps> = ({
       </div>
 
       {/* Name (Tiny) */}
-      <div className="absolute bottom-6 w-full text-center text-[0.5rem] opacity-60 truncate px-1 pointer-events-none">
+      <div className="absolute bottom-4 w-full text-center text-[0.5rem] opacity-60 truncate px-1 pointer-events-none">
         {card.name}
       </div>
     </div>
