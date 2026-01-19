@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { CardData, CardType, GameRules, BoardSlot, LogEntry, ThemeMode, MoveSuggestion } from './types';
-import { INITIAL_HAND, INITIAL_RULES, parseStat } from './constants';
+import React, { useState, useEffect } from 'react';
+import { CardData, CardType, GameRules, BoardSlot, LogEntry, ThemeMode, MoveSuggestion, Deck } from './types';
+import { INITIAL_HAND, INITIAL_RULES, parseStat, STORAGE_KEY_DECKS, STORAGE_KEY_ACTIVE_DECK_ID, MAX_DECKS } from './constants';
 import { resolvePlacement, getBestMove } from './services/gameLogic';
 import GameControls from './components/GameControls';
 import Hand from './components/Hand';
@@ -13,6 +13,79 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>('dark');
   const [hand, setHand] = useState<CardData[]>(INITIAL_HAND);
   const [board, setBoard] = useState<BoardSlot[]>(Array(9).fill(null));
+
+  // Deck Management State
+  const [decks, setDecks] = useState<Deck[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_DECKS);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse decks', e);
+      }
+    }
+    return [{ id: 'default', name: '預設牌組', cards: INITIAL_HAND }];
+  });
+
+  const [activeDeckId, setActiveDeckId] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_KEY_ACTIVE_DECK_ID) || 'default';
+  });
+
+  // Sync hand with active deck on load
+  useEffect(() => {
+    const activeDeck = decks.find(d => d.id === activeDeckId) || decks[0];
+    if (activeDeck) {
+      setHand(activeDeck.cards);
+      if (activeDeck.id !== activeDeckId) setActiveDeckId(activeDeck.id);
+    }
+  }, [activeDeckId, decks]);
+
+  // Persist decks
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_DECKS, JSON.stringify(decks));
+  }, [decks]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_ACTIVE_DECK_ID, activeDeckId);
+  }, [activeDeckId]);
+
+  const updateActiveDeckCards = (newCards: CardData[]) => {
+    setDecks(prev => prev.map(d => d.id === activeDeckId ? { ...d, cards: newCards } : d));
+    setHand(newCards);
+  };
+
+  const handleAddDeck = () => {
+    if (decks.length >= MAX_DECKS) {
+      alert(`最多只能擁有 ${MAX_DECKS} 組牌組`);
+      return;
+    }
+    const newDeck: Deck = {
+      id: `deck-${Date.now()}`,
+      name: `新牌組 ${decks.length + 1}`,
+      cards: JSON.parse(JSON.stringify(INITIAL_HAND))
+    };
+    setDecks([...decks, newDeck]);
+    setActiveDeckId(newDeck.id);
+  };
+
+  const handleDeleteDeck = (id: string) => {
+    if (decks.length <= 1) {
+      alert('至少需要保留一組牌組');
+      return;
+    }
+    const newDecks = decks.filter(d => d.id !== id);
+    setDecks(newDecks);
+    if (activeDeckId === id) {
+      setActiveDeckId(newDecks[0].id);
+    }
+  };
+
+  const handleRenameDeck = (id: string, newName: string) => {
+    if (!newName.trim()) return;
+    setDecks(decks.map(d => d.id === id ? { ...d, name: newName } : d));
+  };
+
   const [rules, setRules] = useState<GameRules>(INITIAL_RULES);
   const [selectedCardIdx, setSelectedCardIdx] = useState<number | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -41,14 +114,14 @@ const App: React.FC = () => {
     const val = parseStat(value);
     const newHand = [...hand];
     newHand[cardIdx].stats[stat] = val as any;
-    setHand(newHand);
+    updateActiveDeckCards(newHand);
     setSuggestion(null);
   };
 
   const handleTypeChange = (cardIdx: number, type: CardType) => {
     const newHand = [...hand];
     newHand[cardIdx].type = type;
-    setHand(newHand);
+    updateActiveDeckCards(newHand);
     setSuggestion(null);
   };
 
@@ -141,16 +214,7 @@ const App: React.FC = () => {
 
   const resetAll = () => {
     resetBoard();
-    const savedDefault = localStorage.getItem('ff14-cardpvp-default-deck');
-    if (savedDefault) {
-      try {
-        setHand(JSON.parse(savedDefault));
-      } catch (e) {
-        setHand(INITIAL_HAND);
-      }
-    } else {
-      setHand(INITIAL_HAND);
-    }
+    updateActiveDeckCards(JSON.parse(JSON.stringify(INITIAL_HAND)));
     setRules(INITIAL_RULES);
     setEditMode(false);
   };
@@ -203,6 +267,12 @@ const App: React.FC = () => {
             onTypeChange={handleTypeChange}
             isCardSelectable={isCardSelectable}
             onLoadDeck={(newHand) => setHand(newHand)}
+            decks={decks}
+            activeDeckId={activeDeckId}
+            onAddDeck={handleAddDeck}
+            onDeleteDeck={handleDeleteDeck}
+            onRenameDeck={handleRenameDeck}
+            onSelectDeck={setActiveDeckId}
           />
 
           {/* Center Panel: Board */}

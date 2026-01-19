@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Edit2, Check, ChevronRight, Save, FolderOpen } from 'lucide-react';
+import { Shield, Edit2, Check, ChevronRight, Save, FolderOpen, Plus, Trash2, Edit3 } from 'lucide-react';
 import clsx from 'clsx';
 import Card from './Card';
-import { CardData, CardType, ThemeMode, MoveSuggestion } from '../types';
+import { CardData, CardType, ThemeMode, MoveSuggestion, Deck } from '../types';
 import { displayStat } from '../constants';
 
 interface HandProps {
@@ -21,6 +21,12 @@ interface HandProps {
   onTypeChange: (idx: number, type: CardType) => void;
   isCardSelectable: (idx: number) => boolean;
   onLoadDeck: (newHand: CardData[]) => void;
+  decks: Deck[];
+  activeDeckId: string;
+  onAddDeck: () => void;
+  onDeleteDeck: (id: string) => void;
+  onRenameDeck: (id: string, name: string) => void;
+  onSelectDeck: (id: string) => void;
 }
 
 const STORAGE_KEY_DECK = 'ff14-cardpvp-deck';
@@ -41,43 +47,26 @@ const Hand: React.FC<HandProps> = ({
   onTypeChange,
   isCardSelectable,
   onLoadDeck,
+  decks,
+  activeDeckId,
+  onAddDeck,
+  onDeleteDeck,
+  onRenameDeck,
+  onSelectDeck,
 }) => {
-  const handleSaveDeck = () => {
-    localStorage.setItem(STORAGE_KEY_DECK, JSON.stringify(hand));
-    alert('當前牌組已儲存！');
+  const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
+  const [tempDeckName, setTempDeckName] = useState('');
+
+  const startRenaming = (id: string, name: string) => {
+    setEditingDeckId(id);
+    setTempDeckName(name);
   };
 
-  const handleLoadDeck = () => {
-    const saved = localStorage.getItem(STORAGE_KEY_DECK);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        onLoadDeck(parsed);
-      } catch (e) {
-        console.error('Failed to load deck', e);
-      }
-    } else {
-      alert('找不到儲存的牌組！');
+  const submitRename = () => {
+    if (editingDeckId && tempDeckName.trim()) {
+      onRenameDeck(editingDeckId, tempDeckName.trim());
     }
-  };
-
-  const handleSetDefaultDeck = () => {
-    localStorage.setItem(STORAGE_KEY_DEFAULT_DECK, JSON.stringify(hand));
-    alert('已設為預設牌組！下次初始化將自動讀取。');
-  };
-
-  const handleLoadDefaultDeck = () => {
-    const saved = localStorage.getItem(STORAGE_KEY_DEFAULT_DECK);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        onLoadDeck(parsed);
-      } catch (e) {
-        console.error('Failed to load default deck', e);
-      }
-    } else {
-      alert('尚未設定預設牌組！');
-    }
+    setEditingDeckId(null);
   };
 
   return (
@@ -137,60 +126,72 @@ const Hand: React.FC<HandProps> = ({
             </motion.button>
         </div>
 
-        {/* Deck Tools */}
-        {editMode && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex flex-col gap-2"
-          >
-            <div className="flex gap-2">
-              <button
-                onClick={handleSaveDeck}
-                className={clsx(
-                  "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors",
-                  isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
+        {/* Deck Selector Tabs */}
+        <div className="flex flex-col gap-2 z-10">
+          <div className="flex items-center justify-between px-1">
+            <span className={clsx("text-[10px] font-bold tracking-widest uppercase opacity-60", isDark ? "text-amber-100" : "text-slate-500")}>
+              選擇牌組 ({decks.length}/10)
+            </span>
+            <button 
+              onClick={onAddDeck}
+              className={clsx(
+                "p-1 rounded hover:bg-white/10 transition-colors",
+                isDark ? "text-amber-500" : "text-blue-600"
+              )}
+              title="新增牌組"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+          
+          <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar px-1 no-scrollbar">
+            {decks.map((deck) => (
+              <div key={deck.id} className="relative group/deck shrink-0">
+                <button
+                  onClick={() => onSelectDeck(deck.id)}
+                  className={clsx(
+                    "px-3 py-1.5 rounded-md text-[10px] font-bold transition-all border whitespace-nowrap",
+                    activeDeckId === deck.id
+                      ? (isDark ? "bg-amber-500/20 border-amber-500 text-amber-200" : "bg-blue-600 border-blue-600 text-white")
+                      : (isDark ? "bg-white/5 border-white/10 text-amber-100/50 hover:bg-white/10" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300")
+                  )}
+                >
+                  {editingDeckId === deck.id ? (
+                    <input
+                      autoFocus
+                      className="bg-transparent border-none outline-none w-16 text-inherit"
+                      value={tempDeckName}
+                      onChange={(e) => setTempDeckName(e.target.value)}
+                      onBlur={submitRename}
+                      onKeyDown={(e) => e.key === 'Enter' && submitRename()}
+                    />
+                  ) : (
+                    deck.name
+                  )}
+                </button>
+                
+                {activeDeckId === deck.id && !editingDeckId && (
+                  <div className="absolute -top-1 -right-1 flex gap-0.5 opacity-0 group-hover/deck:opacity-100 transition-opacity">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); startRenaming(deck.id, deck.name); }}
+                      className="p-0.5 rounded-full bg-slate-800 text-white hover:bg-slate-700"
+                    >
+                      <Edit3 size={8} />
+                    </button>
+                    {decks.length > 1 && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onDeleteDeck(deck.id); }}
+                        className="p-0.5 rounded-full bg-red-600 text-white hover:bg-red-500"
+                      >
+                        <Trash2 size={8} />
+                      </button>
+                    )}
+                  </div>
                 )}
-              >
-                <Save size={12} />
-                儲存
-              </button>
-              <button
-                onClick={handleLoadDeck}
-                className={clsx(
-                  "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors",
-                  isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
-                )}
-              >
-                <FolderOpen size={12} />
-                讀取
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSetDefaultDeck}
-                className={clsx(
-                  "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors border-dashed",
-                  isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
-                )}
-                title="將當前牌組設為預設"
-              >
-                設為預設
-              </button>
-              <button
-                onClick={handleLoadDefaultDeck}
-                className={clsx(
-                  "flex-1 flex items-center justify-center gap-2 py-1.5 rounded text-[10px] font-bold border transition-colors border-dashed",
-                  isDark ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10" : "border-slate-300 text-slate-600 hover:bg-slate-100"
-                )}
-                title="讀取預設牌組"
-              >
-                讀取預設
-              </button>
-            </div>
-          </motion.div>
-        )}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Card List */}

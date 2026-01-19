@@ -34,6 +34,15 @@ body {
   background-color: rgba(156, 163, 175, 0.5);
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Mask Image for fade effect at bottom of logs */
 .mask-image-gradient {
   mask-image: linear-gradient(to bottom, black 90%, transparent 100%);

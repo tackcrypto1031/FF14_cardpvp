@@ -30,3 +30,8 @@ export const parseStat = (val: string): number => {
 export const displayStat = (val: number): string => {
   return val === 10 ? 'A' : val.toString();
 };
+
+export const STORAGE_KEY_DECKS = 'ff14-cardpvp-decks';
+export const STORAGE_KEY_ACTIVE_DECK_ID = 'ff14-cardpvp-active-deck-id';
+export const MAX_DECKS = 10;
+

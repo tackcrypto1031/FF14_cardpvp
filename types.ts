@@ -49,3 +49,9 @@ export interface MoveSuggestion {
   score: number;
   flippedCount: number;
 }
+
+export interface Deck {
+  id: string;
+  name: string;
+  cards: CardData[];
+}
