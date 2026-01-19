@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Edit2, Check, ChevronRight, Save, FolderOpen } from 'lucide-react';
 import clsx from 'clsx';
 import Card from './Card';
-import { CardData, CardType, ThemeMode } from '../types';
+import { CardData, CardType, ThemeMode, MoveSuggestion } from '../types';
 import { displayStat } from '../constants';
-import { MoveSuggestion } from '../services/gameLogic';
 
 interface HandProps {
   hand: CardData[];

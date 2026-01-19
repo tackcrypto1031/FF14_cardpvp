@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { CardData, CardType, GameRules, BoardSlot, LogEntry, ThemeMode } from './types';
+import { CardData, CardType, GameRules, BoardSlot, LogEntry, ThemeMode, MoveSuggestion } from './types';
 import { INITIAL_HAND, INITIAL_RULES, parseStat } from './constants';
-import { resolvePlacement, getBestMove, MoveSuggestion } from './services/gameLogic';
+import { resolvePlacement, getBestMove } from './services/gameLogic';
 import GameControls from './components/GameControls';
 import Hand from './components/Hand';
 import Board from './components/Board';
