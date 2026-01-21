@@ -29,13 +29,13 @@ const getBoardTypeCounts = (board: BoardSlot[]): Map<CardType, number> => {
 
 // Helper: Get effective stat based on rules and board state
 const getEffectiveStat = (
-  card: CardData, 
-  side: 'top' | 'right' | 'bottom' | 'left', 
-  typeCounts: Map<CardType, number>, 
+  card: CardData,
+  side: 'top' | 'right' | 'bottom' | 'left',
+  typeCounts: Map<CardType, number>,
   rules: GameRules
 ): number => {
   let val = card.stats[side];
-  
+
   if ((rules.ascension || rules.descension) && card.type !== CardType.NONE) {
     const count = typeCounts.get(card.type) || 0;
     if (rules.ascension) val += count;
@@ -50,9 +50,9 @@ const getEffectiveStat = (
 const checksFlip = (attackVal: number, defendVal: number, rules: GameRules): boolean => {
   // Fallen Ace (Ace Killer): 1 beats A (10). 
   if (rules.fallenAce) {
-     if (!rules.reverse && attackVal === 1 && defendVal === 10) return true;
-     // If Reverse is also active: A (10) beats 1.
-     if (rules.reverse && attackVal === 10 && defendVal === 1) return true;
+    if (!rules.reverse && attackVal === 1 && defendVal === 10) return true;
+    // If Reverse is also active: A (10) beats 1.
+    if (rules.reverse && attackVal === 10 && defendVal === 1) return true;
   }
 
   if (rules.reverse) {
@@ -81,16 +81,16 @@ export const resolvePlacement = (
   const typeCounts = getBoardTypeCounts(newBoard);
 
   // Queue for Combo chain. Stores index of card that just flipped others.
-  const comboQueue: number[] = []; 
-  
+  const comboQueue: number[] = [];
+
   const adjIds = ADJACENCY[placedCardIndex];
-  
+
   // Helper to construct neighbor info with effective stats
-  const getNeighborInfo = (dir: 'u'|'d'|'l'|'r', idx: number | null, atkSide: 'top'|'bottom'|'left'|'right', defSide: 'top'|'bottom'|'left'|'right') => {
+  const getNeighborInfo = (dir: 'u' | 'd' | 'l' | 'r', idx: number | null, atkSide: 'top' | 'bottom' | 'left' | 'right', defSide: 'top' | 'bottom' | 'left' | 'right') => {
     if (idx === null) return null;
     const target = newBoard[idx];
     if (!target) return null;
-    
+
     return {
       idx,
       card: target,
@@ -186,20 +186,20 @@ export const resolvePlacement = (
   while (comboIdx < comboQueue.length) {
     const currentIdx = comboQueue[comboIdx];
     comboIdx++;
-    
+
     const currentCard = newBoard[currentIdx]!;
     const cAdj = ADJACENCY[currentIdx];
-    
-    const getComboNeighbor = (idx: number | null, atkSide: 'top'|'bottom'|'left'|'right', defSide: 'top'|'bottom'|'left'|'right') => {
-        if (idx === null) return null;
-        const target = newBoard[idx];
-        if (!target) return null;
-        return {
-            idx,
-            target,
-            atk: getEffectiveStat(currentCard, atkSide, typeCounts, rules),
-            def: getEffectiveStat(target, defSide, typeCounts, rules)
-        };
+
+    const getComboNeighbor = (idx: number | null, atkSide: 'top' | 'bottom' | 'left' | 'right', defSide: 'top' | 'bottom' | 'left' | 'right') => {
+      if (idx === null) return null;
+      const target = newBoard[idx];
+      if (!target) return null;
+      return {
+        idx,
+        target,
+        atk: getEffectiveStat(currentCard, atkSide, typeCounts, rules),
+        def: getEffectiveStat(target, defSide, typeCounts, rules)
+      };
     };
 
     const cNeighbors = [
@@ -225,20 +225,24 @@ export const resolvePlacement = (
 
 // --- SOLVER / AI SUGGESTION ---
 
+// --- SOLVER / AI SUGGESTION ---
+
+// Simple Minimax with Alpha-Beta Pruning (Depth 2: Player Move -> Enemy Response)
 export const getBestMove = (
   currentBoard: BoardSlot[],
   hand: CardData[],
-  rules: GameRules
+  rules: GameRules,
+  enemyHand: CardData[] = [] // Optional known enemy cards
 ): MoveSuggestion | null => {
   let bestMove: MoveSuggestion | null = null;
-  let maxScore = -999;
+  let maxScore = -Infinity;
 
   // Identify available slots
   const availableSlots = currentBoard
     .map((slot, idx) => (slot === null ? idx : null))
     .filter((idx): idx is number => idx !== null);
 
-  // Identify used cards
+  // Identify used cards in current board to filter hand
   const usedCardIds = new Set(
     currentBoard
       .filter((slot): slot is CardData => slot !== null)
@@ -247,40 +251,84 @@ export const getBestMove = (
 
   // Filter valid cards based on ORDER rule
   let validCardsIndices: number[] = [];
-  
   if (rules.order) {
     const firstUnusedIdx = hand.findIndex(c => !usedCardIds.has(c.id));
-    if (firstUnusedIdx !== -1) {
-      validCardsIndices = [firstUnusedIdx];
-    }
+    if (firstUnusedIdx !== -1) validCardsIndices = [firstUnusedIdx];
   } else {
     validCardsIndices = hand.map((_, i) => i).filter(i => !usedCardIds.has(hand[i].id));
   }
 
+  // Evaluation Function: Net Score (Blue - Red)
+  const evaluateBoard = (board: BoardSlot[]): number => {
+    let score = 0;
+    board.forEach(c => {
+      if (c) score += (c.owner === 'blue' ? 1 : -1);
+    });
+    return score;
+  };
+
+  // Iterate all possible Player Moves
   for (const cIdx of validCardsIndices) {
     const card = hand[cIdx];
-    
+
     for (const slotIdx of availableSlots) {
+      // 1. Simulate Player Move
       let simBoard = [...currentBoard];
-      simBoard[slotIdx] = { ...card, owner: 'blue' }; // Ensure blue owner for simulation
+      simBoard[slotIdx] = { ...card, owner: 'blue' };
+      const res = resolvePlacement(simBoard, slotIdx, rules);
+      const boardAfterPlayer = res.newBoard;
 
-      const result = resolvePlacement(simBoard, slotIdx, rules);
-      const finalBoard = result.newBoard;
+      // If no enemy hand is known, rely on simple 1-ply evaluation (maximize Blue Count)
+      if (!enemyHand || enemyHand.length === 0) {
+        const score = evaluateBoard(boardAfterPlayer);
+        // Tie-breaker: prefer moves that flip more cards (aggressive) or leave fewer vulnerable sides? 
+        // For now, just raw score.
 
-      let blueCount = 0;
-      finalBoard.forEach(c => {
-        if (c && c.owner === 'blue') blueCount++;
-      });
+        if (score > maxScore) {
+          maxScore = score;
+          bestMove = {
+            cardIdx: cIdx,
+            slotIdx: slotIdx,
+            score: score,
+            flippedCount: 0 // Not accurately tracked here but score implies it
+          };
+        }
+        continue;
+      }
 
-      const score = blueCount;
+      // 2. Simulate Enemy Response (Minimax)
+      // We assume Enemy wants to Minimize the Score (since Blue +1, Red -1)
+      let minEnemyScore = Infinity;
 
-      if (score > maxScore) {
-        maxScore = score;
+      const slotsForEnemy = availableSlots.filter(s => s !== slotIdx); // remaining slots
+
+      if (slotsForEnemy.length === 0) {
+        // No moves left for enemy, this is the final state
+        minEnemyScore = evaluateBoard(boardAfterPlayer);
+      } else {
+        // Try all enemy moves
+        for (const eCard of enemyHand) {
+          for (const eSlot of slotsForEnemy) {
+            let simEnemyBoard = [...boardAfterPlayer];
+            simEnemyBoard[eSlot] = { ...eCard, owner: 'red' };
+            const resEnemy = resolvePlacement(simEnemyBoard, eSlot, rules);
+            const scoreAfterEnemy = evaluateBoard(resEnemy.newBoard);
+
+            if (scoreAfterEnemy < minEnemyScore) {
+              minEnemyScore = scoreAfterEnemy;
+            }
+          }
+        }
+      }
+
+      // The value of this Player Move is the worst-case scenario after Enemy plays
+      if (minEnemyScore > maxScore) {
+        maxScore = minEnemyScore;
         bestMove = {
           cardIdx: cIdx,
           slotIdx: slotIdx,
-          score: score,
-          flippedCount: blueCount
+          score: minEnemyScore,
+          flippedCount: 0
         };
       }
     }

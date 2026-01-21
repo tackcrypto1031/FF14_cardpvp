@@ -22,6 +22,7 @@ export interface CardData {
   stats: CardStats;
   type: CardType;
   owner: 'blue' | 'red'; // Blue = Player, Red = Opponent (simulated)
+  originalOwner?: 'blue' | 'red';
 }
 
 export type BoardSlot = CardData | null;

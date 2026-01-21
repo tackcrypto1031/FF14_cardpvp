@@ -21,12 +21,12 @@ interface CardProps {
   onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
 }
 
-const Card: React.FC<CardProps> = ({ 
-  card, 
+const Card: React.FC<CardProps> = ({
+  card,
   theme,
-  onClick, 
-  isSelected, 
-  size = 'md', 
+  onClick,
+  isSelected,
+  size = 'md',
   className,
   draggable = false,
   onDragStart
@@ -37,23 +37,23 @@ const Card: React.FC<CardProps> = ({
 
   // Size configurations
   const sizeConfig = {
-    sm: { 
-      dim: 'w-16 h-20', 
-      text: 'text-[10px]', 
+    sm: {
+      dim: 'w-16 h-20',
+      text: 'text-[10px]',
       statSize: 'text-xs',
       badge: 'scale-50',
-      name: 'text-[6px]' 
+      name: 'text-[6px]'
     },
-    md: { 
-      dim: 'w-24 h-32', 
-      text: 'text-sm', 
+    md: {
+      dim: 'w-24 h-32',
+      text: 'text-sm',
       statSize: 'text-base',
       badge: 'scale-75',
       name: 'text-[8px]'
     },
-    lg: { 
-      dim: 'w-36 h-48', 
-      text: 'text-lg', 
+    lg: {
+      dim: 'w-36 h-48',
+      text: 'text-lg',
       statSize: 'text-xl',
       badge: 'scale-100',
       name: 'text-[10px]'
@@ -107,8 +107,8 @@ const Card: React.FC<CardProps> = ({
       whileTap={draggable ? { scale: 0.95 } : {}}
       animate={{
         scale: isSelected ? 1.1 : 1,
-        boxShadow: isSelected 
-          ? `0 0 25px ${isBlue ? 'rgba(59,130,246,0.6)' : 'rgba(239,68,68,0.6)'}` 
+        boxShadow: isSelected
+          ? `0 0 25px ${isBlue ? 'rgba(59,130,246,0.6)' : 'rgba(239,68,68,0.6)'}`
           : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
       }}
       className={cn(
@@ -126,9 +126,9 @@ const Card: React.FC<CardProps> = ({
         palette.bg,
         // Texture overlay using CSS gradients instead of external image
         "before:absolute before:inset-0 before:opacity-20 before:mix-blend-overlay",
-        "before:bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] before:from-white/10 before:to-transparent" 
+        "before:bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] before:from-white/10 before:to-transparent"
       )}>
-        
+
         {/* Inner Frame / Metallic Rim */}
         <div className={cn(
           "absolute inset-1 rounded-md border border-white/10 shadow-inner",
@@ -142,34 +142,26 @@ const Card: React.FC<CardProps> = ({
         <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/20 rounded-br-lg" />
 
         {/* Center Grid Pattern (Holographic feel) */}
-        <div className="absolute inset-4 opacity-10" 
-             style={{ 
-               backgroundImage: `radial-gradient(${isBlue ? '#60a5fa' : '#f87171'} 1px, transparent 1px)`, 
-               backgroundSize: '12px 12px' 
-             }} 
+        <div className="absolute inset-4 opacity-10"
+          style={{
+            backgroundImage: `radial-gradient(${isBlue ? '#60a5fa' : '#f87171'} 1px, transparent 1px)`,
+            backgroundSize: '12px 12px'
+          }}
         />
 
         {/* Card Content Wrapper */}
         <div className="relative h-full flex flex-col items-center justify-between py-2 z-10">
-          
-          {/* Top Label / Type */}
-          <div className="w-full flex justify-between px-2 items-start h-6">
-             {/* Rank/Level placeholder or just decorative dots */}
-             <div className="flex gap-0.5">
-               {[...Array(3)].map((_, i) => (
-                 <div key={i} className={`w-1 h-1 rounded-full ${isBlue ? 'bg-cyan-400' : 'bg-red-400'} opacity-60`} />
-               ))}
-             </div>
-             
-             {/* Type Badge */}
-             {card.type !== CardType.NONE && (
-               <div className={cn(
-                 "px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border shadow-sm backdrop-blur-md",
-                 getTypeStyles(card.type)
-               )}>
-                 {card.type}
-               </div>
-             )}
+
+          {/* Top Label / Type - Absolute Positioned to not affect flex layout */}
+          <div className="absolute top-2 left-0 w-full flex justify-between px-2 items-start h-6 pointer-events-none">
+            {/* Rank/Level placeholder or just decorative dots */}
+            <div className="flex gap-0.5">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className={`w-1 h-1 rounded-full ${isBlue ? 'bg-cyan-400' : 'bg-red-400'} opacity-60`} />
+              ))}
+            </div>
+
+            {/* Type Badge moved to center */}
           </div>
 
           {/* Stats Cluster (The Heart) */}
@@ -179,21 +171,31 @@ const Card: React.FC<CardProps> = ({
               "absolute w-16 h-16 rotate-45 border border-white/10 shadow-lg backdrop-blur-sm",
               palette.statBg
             )} />
-            
+
             <div className="relative grid grid-cols-3 grid-rows-3 gap-0.5 w-16 h-16 items-center justify-items-center">
               {/* Top */}
               <div className="col-start-2 row-start-1">
                 <StatValueDisplay value={card.stats.top} className={currentSize.statSize} />
               </div>
-              
+
               {/* Left */}
               <div className="col-start-1 row-start-2">
                 <StatValueDisplay value={card.stats.left} className={currentSize.statSize} />
               </div>
-              
+
               {/* Center (Element or Icon placeholder) */}
-              <div className="col-start-2 row-start-2 opacity-30">
-                 <div className={`w-2 h-2 rounded-full ${isBlue ? 'bg-cyan-400' : 'bg-red-400'}`} />
+              <div className="col-start-2 row-start-2 z-20 flex items-center justify-center">
+                {card.type !== CardType.NONE ? (
+                  <div className={cn(
+                    //"w-full text-center text-[7px] font-bold uppercase tracking-wider text-shadow-sm",
+                    "px-1 py-0.5 rounded-[2px] text-[6px] font-bold uppercase tracking-widest border shadow-[0_2px_4px_rgba(0,0,0,0.4)] backdrop-blur-md min-w-[30px] text-center",
+                    getTypeStyles(card.type)
+                  )}>
+                    {card.type}
+                  </div>
+                ) : (
+                  <div className={`w-1.5 h-1.5 rounded-full ${isBlue ? 'bg-cyan-400' : 'bg-red-400'} opacity-30`} />
+                )}
               </div>
 
               {/* Right */}
